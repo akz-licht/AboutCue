@@ -1,0 +1,22 @@
+{
+  "isRecording": false,
+  "showStartTime": 1771085328254,
+  "lastCueTime": 141.732,
+  "lastCueNumber": "33",
+  "cueTimings": [
+    {
+      "cueNumber": "32",
+      "cueList": "1",
+      "label": "",
+      "timestamp": 104.154,
+      "timeFromPrevious": 0
+    },
+    {
+      "cueNumber": "33",
+      "cueList": "1",
+      "label": "",
+      "timestamp": 141.732,
+      "timeFromPrevious": 37.578
+    }
+  ]
+}

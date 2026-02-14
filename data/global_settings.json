@@ -1,0 +1,10 @@
+{
+  "lastShowName": "Pippi (Kinderabo)",
+  "oscSettings": {
+    "ip_address": "192.168.0.104",
+    "port": 3037,
+    "osc_version": "1.1",
+    "protocol": "tcp"
+  },
+  "mainPlaybackList": "1"
+}

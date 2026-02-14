@@ -1,0 +1,27 @@
+{
+  "name": "qnote-for-eos",
+  "version": "3.5.0",
+  "main": "standalone-server.js",
+  "scripts": {
+    "start": "node standalone-server.js",
+    "build": "pkg standalone-server.js --targets node18-win-x64 --output dist/QnoteForEOS.exe"
+  },
+  "pkg": {
+    "assets": [
+      "public/**/*"
+    ],
+    "outputPath": "dist"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "ETC EOS Console Cue Management App",
+  "dependencies": {
+    "express": "^5.1.0",
+    "fs-extra": "^11.3.2",
+    "multer": "^2.0.2",
+    "node-osc": "^11.0.0",
+    "osc": "^2.4.5",
+    "pkg": "^5.8.1"
+  }
+}

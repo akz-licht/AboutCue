@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qnote for EOS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2a5298 100%);
+            padding: 25px 30px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: slideIn 0.5s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .status {
+            font-size: 14px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid #ff6b6b;
+            color: #ff6b6b;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .status.connected {
+            background: rgba(76, 175, 80, 0.2);
+            border-color: #4CAF50;
+            color: #4CAF50;
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
+        }
+        
+        .nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            animation: fadeIn 0.6s ease 0.2s both;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .nav-button {
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #e0e0e0;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .nav-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .nav-button.active {
+            background: linear-gradient(135deg, #2a5298 0%, #1e3a5f 100%);
+            border-color: #4a90e2;
+            box-shadow: 0 4px 16px rgba(74, 144, 226, 0.3);
+        }
+        
+        .content {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 30px;
+            border-radius: 15px;
+            min-height: 600px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.6s ease 0.3s both;
+        }
+        
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        /* Active/Pending Cue Notes Panel */
+        .active-notes-panel {
+            background: linear-gradient(135deg, rgba(26, 26, 46, 0.98) 0%, rgba(16, 16, 30, 0.98) 100%);
+            border: 1px solid rgba(74, 144, 226, 0.3);
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+        }
+        
+        .active-notes-panel.sticky-panel {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-radius: 10px;
+            padding-bottom: 0;
+        }
+        
+        /* Sticky table header - inside floating panel */
+        table.sticky-table-header {
+            margin: 15px -20px -15px -20px;
+            width: calc(100% + 40px);
+            border-radius: 0 0 10px 10px;
+        }
+        
+        table.sticky-table-header thead {
+            display: table-header-group !important;
+        }
+        
+        table.sticky-table-header th {
+            background: linear-gradient(135deg, #2a5298 0%, #1e3a5f 100%);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        /* Hide original table header since we use sticky header */
+        #cueList .cue-table-full thead {
+            display: none;
+        }
+        
+        .active-notes-content {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .panel-column-headers {
+            display: grid;
+            grid-template-columns: 60px 60px 200px 1fr 120px;
+            gap: 10px;
+            padding: 0 8px;
+            margin-bottom: 4px;
+        }
+        
+        .col-head {
+            font-size: 10px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Make table header sticky so it's always visible while scrolling */
+        .cue-table-full thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .cue-table-full thead th {
+            background: linear-gradient(135deg, #2a5298 0%, #1e3a5f 100%);
+        }
+        
+        .active-note-section {
+            display: grid;
+            grid-template-columns: 60px 60px 200px 1fr 120px;
+            gap: 10px;
+            align-items: center;
+            padding: 8px;
+            border-radius: 6px;
+        }
+        
+        .note-cue-label {
+            font-size: 12px;
+            color: #aaa;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .note-tags {
+            font-size: 11px;
+            color: #888;
+        }
+        
+        .panel-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .panel-recording {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .rec-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid #666;
+            background: rgba(255,255,255,0.05);
+            color: #888;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .rec-btn:hover {
+            border-color: #e74c3c;
+            color: #e74c3c;
+        }
+        
+        .rec-btn.recording {
+            background: #e74c3c;
+            border-color: #e74c3c;
+            color: white;
+            animation: pulse-red 1.5s infinite;
+        }
+        
+        @keyframes pulse-red {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(231, 76, 60, 0); }
+        }
+        
+        .rec-status {
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .rec-status.recording {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+        
+        .panel-buttons {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .jump-active-btn {
+            margin-left: auto;
+            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        
+        .jump-active-btn:hover {
+            background: linear-gradient(135deg, #5a9ff2 0%, #4589cd 100%);
+            transform: scale(1.05);
+        }
+        
+        .tool-btn {
+            background: rgba(30, 30, 50, 0.9);
+            border: 1px solid rgba(74, 144, 226, 0.3);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #ddd;
+        }
+        
+        .tool-btn:hover {
+            background: rgba(74, 144, 226, 0.3);
+            border-color: rgba(74, 144, 226, 0.5);
+        }
+        
+        .tool-btn.danger-btn:hover {
+            background: rgba(220, 53, 69, 0.4);
+            border-color: rgba(220, 53, 69, 0.6);
+        }
+        
+        .toast-notification {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 9999;
+            animation: toastFadeIn 0.3s ease, toastFadeOut 0.3s ease 1.7s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        @keyframes toastFadeIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        
+        @keyframes toastFadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        
+        .tag-color-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .tag-color-row .tag-name {
+            flex: 1;
+            font-weight: 500;
+        }
+        
+        .tag-color-row .color-swatch {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            border: 2px solid rgba(255,255,255,0.2);
+            cursor: pointer;
+        }
+        
+        .scene-jump-select {
+            background: rgba(30, 30, 50, 0.9);
+            color: #ddd;
+            border: 1px solid rgba(74, 144, 226, 0.3);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        
+        .scene-jump-select:hover {
+            border-color: rgba(74, 144, 226, 0.6);
+        }
+        
+        /* Fix dropdown option colors for readability */
+        .scene-jump-select option,
+        select option {
+            background: #1a1a2e;
+            color: #ddd;
+        }
+        
+        .page-cell {
+            cursor: pointer;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .page-input {
+            width: 50px;
+            padding: 4px 6px;
+            background: rgba(30, 30, 50, 0.9);
+            border: 1px solid #4a90e2;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        .page-col {
+            width: 60px;
+            text-align: center;
+        }
+        
+        .active-note-section {
+            flex: 1;
+            min-width: 200px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
+        .note-label {
+            font-size: 10px;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+        
+        .active-label {
+            background: rgba(76, 175, 80, 0.3);
+            color: #4CAF50;
+        }
+        
+        .pending-label {
+            background: rgba(255, 152, 0, 0.3);
+            color: #FF9800;
+        }
+        
+        .note-cue-num {
+            font-weight: bold;
+            color: #fff;
+            font-size: 14px;
+            flex-shrink: 0;
+            min-width: 50px;
+        }
+        
+        .note-text {
+            color: #ddd;
+            font-size: 13px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        
+        .toolbar-left, .toolbar-right {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+        
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+        }
+        
+        .button.danger {
+            background: linear-gradient(135deg, #f44336 0%, #c62828 100%);
+            box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
+        }
+        
+        .button.danger:hover {
+            box-shadow: 0 6px 16px rgba(244, 67, 54, 0.4);
+        }
+        
+        .button.primary {
+            background: linear-gradient(135deg, #2196F3 0%, #1565C0 100%);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        }
+        
+        .button.primary:hover {
+            box-shadow: 0 6px 16px rgba(33, 150, 243, 0.4);
+        }
+        
+        /* Filter Section */
+        .filter-section {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .filter-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .filter-label {
+            font-weight: 500;
+            color: #a0a0a0;
+            margin-right: 10px;
+        }
+        
+        .tag-filter {
+            display: inline-block;
+            padding: 6px 14px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        
+        .tag-filter:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+        
+        .tag-filter.active {
+            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            border-color: #4a90e2;
+            box-shadow: 0 2px 8px rgba(74, 144, 226, 0.4);
+        }
+        
+        /* Modern Table Styling */
+        .cue-table-container {
+            overflow-x: auto;
+            border-radius: 10px;
+        }
+        
+        /* Wrapper for proper sticky header behavior */
+        #cue-list {
+            overflow: visible;
+        }
+        
+        /* Ensure sticky headers work inside scrollable container */
+        /* The header sticks right below the sticky active notes panel */
+        .cue-table-full thead {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+        
+        .cue-table-full thead th {
+            background: linear-gradient(135deg, #2a5298 0%, #1e3a5f 100%);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        
+        th {
+            background: linear-gradient(135deg, #2a5298 0%, #1e3a5f 100%);
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #e0e0e0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        th:first-child {
+            border-top-left-radius: 10px;
+        }
+        
+        th:last-child {
+            border-top-right-radius: 10px;
+        }
+        
+        td {
+            padding: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        tr {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        tbody tr {
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.02);
+        }
+        
+        tbody tr:hover:not(.inline-editor):not(.expanded-row):not(.scene-separator) {
+            background: rgba(255, 255, 255, 0.08) !important;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Full-row color highlighting */
+        tbody tr[data-color] {
+            background: color-mix(in srgb, var(--row-color) 15%, transparent) !important;
+        }
+        
+        tbody tr[data-color] td:first-child {
+            border-left: 6px solid var(--row-color);
+        }
+        
+        /* Tag Badges */
+        .tag-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            margin-right: 5px;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+        }
+        
+        .cue-number {
+            font-weight: 600;
+            font-size: 15px;
+            color: #4a90e2;
+        }
+        
+        .cue-label {
+            font-weight: 500;
+        }
+        
+        .fade-time {
+            color: #ffa726;
+            font-weight: 500;
+        }
+        
+        .action-button {
+            padding: 6px 14px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            color: #e0e0e0;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+        
+        .action-button:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
+        }
+        
+        /* Modal Styling */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #1e1e2e 0%, #2a2a3e 100%);
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 600px;
+            max-width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: slideUp 0.4s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .modal-header h3 {
+            font-size: 22px;
+            font-weight: 600;
+            color: #4a90e2;
+        }
+        
+        .close {
+            font-size: 28px;
+            cursor: pointer;
+            color: #999;
+            transition: all 0.2s ease;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        
+        .close:hover {
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+            transform: rotate(90deg);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #a0a0a0;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4a90e2;
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+        }
+        
+        .tag-input-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .tag-input-container input {
+            flex: 1;
+        }
+        
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .tag-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .tag-remove {
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: bold;
+            transition: color 0.2s ease;
+        }
+        
+        .tag-remove:hover {
+            color: #ff6b6b;
+        }
+        
+        .notes-area {
+            width: 100%;
+            height: 200px;
+            resize: vertical;
+        }
+        
+        /* Inline Editor Styles */
+        .inline-editor {
+            background: rgba(0, 0, 0, 0.3) !important;
+        }
+        
+        .inline-editor td {
+            padding: 0 !important;
+        }
+        
+        .inline-edit-container {
+            position: relative;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            margin: 5px;
+        }
+        
+        .editor-close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: #aaa;
+            font-size: 20px;
+            line-height: 1;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .editor-close-btn:hover {
+            background: rgba(255, 87, 34, 0.3);
+            color: #FF5722;
+        }
+        
+        .auto-save-hint {
+            display: block;
+            color: #666;
+            font-size: 11px;
+            font-style: italic;
+            margin-top: 5px;
+        }
+        
+        .edit-section {
+            margin-bottom: 25px;
+        }
+        
+        .edit-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .edit-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #a0a0a0;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* Color Picker Grid */
+        .color-picker-grid {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .color-option {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .color-option:hover {
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .color-option.selected {
+            border-color: #fff;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3), 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+        
+        /* Color Dot Indicator */
+        .color-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Tag Selector */
+        .tag-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .tag-option {
+            display: inline-block;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        
+        .tag-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .tag-option.selected {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+        }
+        
+        .new-tag-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .new-tag-input input {
+            flex: 1;
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 14px;
+        }
+        
+        .new-tag-input input:focus {
+            outline: none;
+            border-color: #4a90e2;
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        /* Inline Notes Area */
+        .inline-notes-area {
+            width: 100%;
+            min-height: 120px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            margin-bottom: 10px;
+        }
+        
+        .inline-notes-area:focus {
+            outline: none;
+            border-color: #4a90e2;
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .notes-preview {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .notes-preview[data-notes]:hover::after {
+            content: attr(data-notes);
+            position: absolute;
+            left: 0;
+            top: 100%;
+            background: #1a1a2e;
+            border: 1px solid #4a90e2;
+            padding: 10px 15px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            max-width: 400px;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .expanded-row {
+            background: rgba(74, 144, 226, 0.1) !important;
+        }
+        
+        .active-cue {
+            background: rgba(76, 175, 80, 0.15) !important;
+            border-left: 4px solid #4CAF50 !important;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.2);
+        }
+        
+        .pending-cue {
+            background: rgba(255, 193, 7, 0.1) !important;
+            border-left: 4px solid #FFC107 !important;
+        }
+        
+        /* Scene Separator - outdented for hierarchy */
+        .scene-separator {
+            background: color-mix(in srgb, var(--scene-color, #888) 8%, transparent) !important;
+            cursor: default;
+            position: relative;
+        }
+        
+        .scene-separator td {
+            padding: 12px 15px 12px 0 !important;
+        }
+        
+        .scene-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-left: -14px;
+            padding-left: 8px;
+            border-left: 3px solid var(--scene-color, #888);
+        }
+        
+        .scene-collapse-btn {
+            cursor: pointer;
+            font-size: 12px;
+            color: #888;
+            width: 20px;
+            text-align: center;
+            transition: color 0.2s;
+        }
+        
+        .scene-collapse-btn:hover {
+            color: #fff;
+        }
+        
+        .scene-label {
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        
+        .scene-cue-range {
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .scene-duration {
+            font-size: 12px;
+            color: #ffa726;
+            font-weight: 500;
+        }
+        
+        /* Visual scene line - cues within a scene have a colored left border */
+        tbody tr.in-scene td:first-child {
+            border-left: 3px solid color-mix(in srgb, var(--scene-color, #888) 25%, #1a1a2e);
+        }
+        
+        /* Cue number cell wrapper */
+        .cue-number-cell {
+            display: inline-block;
+        }
+        
+        /* Indent arrow for auto-follow cues - yellow like follow/hang times */
+        .indent-arrow {
+            color: #ffa726;
+            margin-right: 4px;
+            font-size: 11px;
+        }
+        
+        /* Invisible spacer for parts and scene cues (same width as arrow) */
+        .indent-spacer {
+            display: inline-block;
+            width: 14px;
+        }
+        
+        .scene-notes-input {
+            flex: 1;
+            min-width: 200px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 4px;
+            padding: 6px 10px;
+            color: #ddd;
+            font-size: 12px;
+        }
+        
+        .scene-notes-input:focus {
+            outline: none;
+            border-color: rgba(74, 144, 226, 0.5);
+            background: rgba(255,255,255,0.08);
+        }
+        
+        .scene-color-select {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 4px;
+            padding: 5px 8px;
+            color: #ddd;
+            font-size: 11px;
+            cursor: pointer;
+        }
+        
+        .scene-controls-btn {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 4px;
+            padding: 4px 10px;
+            color: #888;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .scene-controls-btn:hover {
+            background: rgba(255,255,255,0.12);
+            color: #ddd;
+        }
+        
+        /* Time columns (Int Up, Int Down, Focus, Color, Beam) */
+        .time-col {
+            width: 55px;
+            text-align: center;
+            font-size: 12px;
+        }
+        
+        .time-cell {
+            text-align: center;
+            font-family: monospace;
+            font-size: 12px;
+            color: #aaa;
+        }
+        
+        .cue-table-full {
+            font-size: 13px;
+            table-layout: fixed;
+            width: 100%;
+        }
+        
+        /* Fixed column widths for alignment */
+        .cue-table-full .col-cue { width: 80px; }
+        .cue-table-full .col-label { width: auto; }
+        .cue-table-full .col-time { width: 50px; }
+        .cue-table-full .col-flags { width: 55px; }
+        .cue-table-full .col-fh { width: 50px; }
+        .cue-table-full .col-duration { width: 75px; }
+        .cue-table-full .col-tags { width: 80px; }
+        .cue-table-full .col-notes { width: auto; }
+        .cue-table-full .col-page { width: 45px; }
+        
+        .cue-table-full th {
+            white-space: nowrap;
+            padding: 12px 6px;
+            text-align: center;
+        }
+        
+        .cue-table-full th:first-child,
+        .cue-table-full td:first-child {
+            text-align: left;
+            padding-left: 12px;
+        }
+        
+        .cue-table-full th:last-child,
+        .cue-table-full td:last-child {
+            padding-right: 12px;
+        }
+        
+        .cue-table-full td {
+            padding: 10px 6px;
+        }
+        
+        /* Flags (Mark/Block/Assert) */
+        .flags-col, .follow-hang-col {
+            width: 60px;
+            text-align: center;
+        }
+        
+        .flags-cell, .follow-hang-cell {
+            text-align: center;
+            white-space: nowrap;
+        }
+        
+        .flag {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            line-height: 20px;
+            text-align: center;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            margin: 0 1px;
+        }
+        
+        .flag-mark {
+            background: rgba(33, 150, 243, 0.3);
+            color: #2196F3;
+            border: 1px solid rgba(33, 150, 243, 0.5);
+        }
+        
+        .flag-block {
+            background: rgba(255, 87, 34, 0.3);
+            color: #FF5722;
+            border: 1px solid rgba(255, 87, 34, 0.5);
+        }
+        
+        .flag-assert {
+            background: rgba(156, 39, 176, 0.3);
+            color: #9C27B0;
+            border: 1px solid rgba(156, 39, 176, 0.5);
+        }
+        
+        /* Follow/Hang display */
+        .follow-hang {
+            font-family: monospace;
+            font-size: 12px;
+            color: #FFC107;
+        }
+        
+        /* Part indicator */
+        .part-indicator {
+            display: inline-block;
+            background: rgba(33, 150, 243, 0.2);
+            color: #64B5F6;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 10px;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+        
+        /* Cue part rows - italic styling only, no extra indent */
+        .cue-part td:first-child {
+            font-style: italic;
+        }
+        
+        .cue-part {
+            background: rgba(0, 0, 0, 0.15) !important;
+        }
+        
+        .part-cue-number {
+            color: #888;
+            font-size: 12px;
+            font-style: italic;
+        }
+        
+        .time-with-delay {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 3px;
+        }
+        
+        .delay-indicator {
+            display: inline-block;
+            background: rgba(255, 152, 0, 0.2);
+            color: #FF9800;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 10px;
+        }
+        
+        .time-value {
+            display: inline;
+        }
+        
+        /* Dim placeholder text */
+        .dim {
+            color: #555;
+        }
+        
+        /* Settings Form */
+        .info-box {
+            background: rgba(26, 77, 46, 0.3);
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 10px;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+        
+        .info-box h3 {
+            margin-top: 0;
+            color: #4CAF50;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        
+        .info-box ol {
+            margin: 15px 0;
+            padding-left: 25px;
+        }
+        
+        .info-box li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+        
+        .info-box code {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #ffa726;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+        
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+            
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .toolbar-left, .toolbar-right {
+                justify-content: center;
+            }
+            
+            table {
+                font-size: 12px;
+            }
+            
+            th, td {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <h1>Qnote for EOS</h1>
+                <div id="showSelectorArea" style="display: flex; align-items: center; gap: 10px; margin-left: 20px;">
+                    <label style="font-size: 14px; color: #ccc;">Show:</label>
+                    <select id="showSelector" onchange="switchShow(this.value)" style="padding: 6px 12px; border-radius: 6px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 14px; min-width: 150px; cursor: pointer;">
+                        <option value="Default">Default</option>
+                    </select>
+                    <button onclick="createNewShow()" class="button" style="font-size: 12px; padding: 6px 10px;" title="Create new show">+</button>
+                    <button onclick="deleteCurrentShow()" class="button danger" style="font-size: 12px; padding: 6px 10px;" title="Delete current show">-</button>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div class="status" id="connectionStatus">Not connected to EOS console</div>
+            </div>
+        </div>
+        
+        <div class="nav">
+            <button class="nav-button active" onclick="showTab('cues')">Cue List</button>
+            <button class="nav-button" onclick="showTab('notes')">Show Notes</button>
+            <button class="nav-button" onclick="showTab('settings')">OSC Settings</button>
+        </div>
+        
+        <div class="content" id="content">
+            <!-- Cue List Tab -->
+            <div id="cues-tab">
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <button class="button" onclick="refreshCues()">🔄 Refresh Cues</button>
+                        <button class="button primary" onclick="exportPDF()">📄 Export PDF</button>
+                    </div>
+                    <div class="toolbar-right">
+                        <span style="color: #a0a0a0; font-size: 13px;" id="cueCount">0 cues</span>
+                    </div>
+                </div>
+                
+                <!-- Active/Pending Cue Notes Panel - Sticky at top -->
+                <div id="activeCueNotesPanel" class="active-notes-panel sticky-panel" style="display: none;">
+                    <div class="active-notes-content">
+                        <div class="panel-column-headers">
+                            <span class="col-head"></span>
+                            <span class="col-head">Cue #</span>
+                            <span class="col-head">Label</span>
+                            <span class="col-head">Notes</span>
+                            <span class="col-head">Tags</span>
+                        </div>
+                        <div class="active-note-section" id="activeNoteSection">
+                            <span class="note-label active-label">ACTIVE</span>
+                            <span class="note-cue-num" id="activeNoteCue">--</span>
+                            <span class="note-cue-label" id="activeCueLabel">--</span>
+                            <span class="note-text" id="activeNoteText">No notes</span>
+                            <span class="note-tags" id="activeNoteTags"></span>
+                        </div>
+                        <div class="active-note-section" id="pendingNoteSection">
+                            <span class="note-label pending-label">NEXT</span>
+                            <span class="note-cue-num" id="pendingNoteCue">--</span>
+                            <span class="note-cue-label" id="pendingCueLabel">--</span>
+                            <span class="note-text" id="pendingNoteText">No notes</span>
+                            <span class="note-tags" id="pendingNoteTags"></span>
+                        </div>
+                    </div>
+                    <div class="panel-controls">
+                        <div class="panel-recording" id="panelRecording">
+                            <button class="rec-btn" onclick="toggleShowTimerRecording()" id="panelRecBtn" title="Start/Stop Recording">⏺</button>
+                            <span class="rec-status" id="panelRecStatus">Not recording</span>
+                        </div>
+                        <div class="panel-buttons">
+                            <select id="cueListSelect" class="scene-jump-select" onchange="selectCueList(this.value)" title="Select Cue List">
+                                <option value="all">📋 All Lists</option>
+                            </select>
+                            <select id="sceneJumpSelect" class="scene-jump-select" onchange="jumpToScene(this.value)" title="Jump to Scene">
+                                <option value="">📑 Scenes</option>
+                            </select>
+                            <select id="pageJumpSelect" class="scene-jump-select" onchange="jumpToPage(this.value)" title="Jump to Page">
+                                <option value="">📄 Pages</option>
+                            </select>
+                            <button class="jump-active-btn" onclick="jumpToActiveCue()" title="Jump to Active Cue">🎯</button>
+                            <button class="tool-btn" onclick="showDurationCalculator()" title="Duration Calculator">⏱️</button>
+                            <button class="tool-btn" onclick="showTagColorModal()" title="Tag Color Linking">🏷️</button>
+                            <button class="tool-btn" onclick="showMultiCueEditor()" title="Edit Multiple Cues">✏️</button>
+                            <button class="tool-btn" onclick="expandAllScenes()" title="Expand All Scenes">⬇️</button>
+                            <button class="tool-btn" onclick="collapseAllScenes()" title="Collapse All Scenes">⬆️</button>
+                            <span style="border-left: 1px solid rgba(255,255,255,0.2); height: 24px; margin: 0 8px;"></span>
+                            <button class="tool-btn" onclick="showTimingsEditor()" title="Edit Timings">📝</button>
+                            <button class="tool-btn danger-btn" onclick="clearShowTimings()" title="Clear Timings">🗑️</button>
+                            <span style="border-left: 1px solid rgba(255,255,255,0.2); height: 24px; margin: 0 8px;"></span>
+                            <button class="tool-btn" onclick="showDiagnostics()" title="Show Diagnostics" style="color: #ffa726;">🔧</button>
+                        </div>
+                    </div>
+                    <!-- Sticky Table Header - inside floating panel so it sticks with it -->
+                    <table class="sticky-table-header cue-table-full" id="stickyTableHeader">
+                        <colgroup>
+                            <col class="col-cue">
+                            <col class="col-label">
+                            <col class="col-time">
+                            <col class="col-time">
+                            <col class="col-time">
+                            <col class="col-time">
+                            <col class="col-time">
+                            <col class="col-flags">
+                            <col class="col-fh">
+                            <col class="col-duration">
+                            <col class="col-tags">
+                            <col class="col-notes">
+                            <col class="col-page">
+                        </colgroup>
+                        <thead><tr>
+                            <th>Cue #</th>
+                            <th>Label</th>
+                            <th title="Intensity Up Time">Int ↑</th>
+                            <th title="Intensity Down Time">Int ↓</th>
+                            <th title="Focus Time">Focus</th>
+                            <th title="Color Time">Color</th>
+                            <th title="Beam Time">Beam</th>
+                            <th title="Mark / Block / Assert">M/B/A</th>
+                            <th title="Follow / Hang">F/H</th>
+                            <th>Duration</th>
+                            <th>Tags</th>
+                            <th>Notes</th>
+                            <th title="Script Page Reference">Page</th>
+                        </tr></thead>
+                    </table>
+                </div>
+                
+                <!-- Tag Filter Section -->
+                <div class="filter-section" id="filterSection" style="display: none;">
+                    <div class="filter-row">
+                        <span class="filter-label">Filter by tags:</span>
+                        <div id="tagFilters"></div>
+                        <button class="action-button" onclick="clearFilters()" style="margin-left: auto;">Clear All</button>
+                    </div>
+                </div>
+                
+                <div class="cue-table-container">
+                    <div id="cueList">
+                        <div class="empty-state">
+                            <p style="font-size: 18px; margin-bottom: 10px;">No cues loaded</p>
+                            <p>Configure OSC settings and connect to your EOS console</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Show Notes Tab -->
+            <div id="notes-tab" style="display: none;">
+                <h2 style="margin-bottom: 20px; color: #4a90e2;">Show Notes</h2>
+                <textarea id="showNotesText" class="notes-area" placeholder="Add general show notes here..."></textarea>
+                <div style="margin-top: 15px;">
+                    <button class="button" onclick="saveShowNotes()">💾 Save Notes</button>
+                </div>
+            </div>
+            
+            <!-- OSC Settings Tab -->
+            <div id="settings-tab" style="display: none;">
+                <h2 style="margin-bottom: 20px; color: #4a90e2;">OSC Settings</h2>
+                
+                <div class="info-box">
+                    <h3>📋 EOS Console Setup Instructions</h3>
+                    <ol>
+                        <li><strong>On your EOS console:</strong> Press [Setup] → Show → Show Control → OSC</li>
+                        <li><strong>For TCP (recommended):</strong> Use port 3037 with OSC 1.1 SLIP</li>
+                        <li><strong>For UDP:</strong> Set OSC RX Port to 8000 and TX Port to 8001</li>
+                        <li><strong>Enable OSC TX:</strong> Check the box</li>
+                    </ol>
+                    <p><strong>💡 Tip:</strong> TCP on port 3037 is recommended for reliable cue retrieval (like Cue-View)</p>
+                </div>
+                
+                <form id="oscSettings">
+                    <div class="form-group">
+                        <label for="ipAddress">EOS Console IP Address:</label>
+                        <input type="text" id="ipAddress" value="192.168.1.100" placeholder="e.g., 192.168.1.100">
+                    </div>
+                    <div class="form-group">
+                        <label for="protocol">Protocol:</label>
+                        <select id="protocol" onchange="updateDefaultPort()">
+                            <option value="tcp" selected>TCP (Recommended)</option>
+                            <option value="udp">UDP</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="port">Port:</label>
+                        <input type="number" id="port" value="3037" placeholder="3037">
+                    </div>
+                    <div class="form-group">
+                        <label for="oscVersion">OSC Version:</label>
+                        <select id="oscVersion">
+                            <option value="1.1" selected>OSC 1.1 (SLIP)</option>
+                            <option value="1.0">OSC 1.0</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="mainPlaybackList">Main Playback Cue List:</label>
+                        <input type="number" id="mainPlaybackList" value="1" min="1" placeholder="1" style="width: 80px;">
+                        <span style="color: #888; font-size: 12px; margin-left: 8px;">Auto-detected from EOS Fader 0 on connect. Pending cue & timing recording apply to this list only.</span>
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button type="button" class="button" onclick="saveSettings()">💾 Save Settings</button>
+                        <button type="button" class="button" onclick="connectToEOS()">🔌 Connect to EOS</button>
+                        <button type="button" class="button danger" onclick="disconnectFromEOS()">❌ Disconnect</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timings Editor Modal -->
+    <div id="timingsEditorModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; overflow-y: auto;">
+        <div style="max-width: 600px; margin: 50px auto; background: #1e1e1e; border-radius: 12px; padding: 30px; position: relative;">
+            <button onclick="closeTimingsEditor()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; color: #888; font-size: 24px; cursor: pointer;">&times;</button>
+            <h2 style="margin-top: 0; color: #fff;">Edit Show Timings</h2>
+            <p style="color: #888; font-size: 13px; margin-bottom: 20px;">Adjust the time between cues (in seconds). These durations are used for countdown predictions.</p>
+            <div id="timingsEditorContent">
+                <p style="color: #666;">No timings recorded yet. Record a show or add cues manually.</p>
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 10px;">
+                <button class="button primary" onclick="saveTimingsEdits()">Save Changes</button>
+                <button class="button" onclick="closeTimingsEditor()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Duration Calculator Modal -->
+    <div id="durationCalcModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="max-width: 500px; width: 90%; background: #1e1e1e; border-radius: 12px; padding: 30px; position: relative;">
+            <button onclick="closeDurationCalculator()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; color: #888; font-size: 24px; cursor: pointer;">&times;</button>
+            <h2 style="margin-top: 0; color: #fff;">Duration Calculator</h2>
+            <p style="color: #888; font-size: 13px; margin-bottom: 20px;">Calculate total duration between cues or for a scene.</p>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="color: #a0a0a0; display: block; margin-bottom: 8px;">By Cue Range:</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <select id="calcStartCue" class="input" style="flex: 1;"></select>
+                    <span style="color: #666;">to</span>
+                    <select id="calcEndCue" class="input" style="flex: 1;"></select>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="color: #a0a0a0; display: block; margin-bottom: 8px;">Or by Scene:</label>
+                <select id="calcScene" class="input" style="width: 100%;"></select>
+            </div>
+            
+            <button class="button primary" onclick="calculateDuration()" style="width: 100%; margin-bottom: 20px;">Calculate</button>
+            
+            <div id="calcResult" style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 15px; min-height: 60px;">
+                <p style="color: #666; margin: 0;">Select cues or a scene and click Calculate</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tag Color Mapping Modal -->
+    <div id="tagColorModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="max-width: 500px; width: 90%; background: #1e1e1e; border-radius: 12px; padding: 30px; position: relative; max-height: 80vh; overflow-y: auto;">
+            <button onclick="closeTagColorModal()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; color: #888; font-size: 24px; cursor: pointer;">&times;</button>
+            <h2 style="margin-top: 0; color: #fff;">Tag Color Linking</h2>
+            <p style="color: #888; font-size: 13px; margin-bottom: 20px;">Assign a default color to each tag. Cues with these tags will automatically use the assigned color.</p>
+            <div id="tagColorContent"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
