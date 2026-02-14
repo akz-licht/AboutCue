@@ -1259,35 +1259,29 @@ function setActiveCueByListAndNumber(list, cueNum, type) {
 // Pending format: "1/2 cue 2 label 1.9" = "list/cue <label_text> fade_time" (no percentage)
 function parseCueText(cueText, type, contextList) {
     try {
-        // console.log(`🔍 Parsing ${type} cue text: "${cueText}" (contextList=${contextList || 'unknown'})`);
+        console.log(`🔍 Parsing ${type} cue text: "${cueText}" (contextList=${contextList || 'unknown'})`);
         
         const text = cueText.trim();
         
-        // Handle empty or "no cue" cases
         if (!text || text === '0.0 100%' || text.startsWith('0.0 ') || text.startsWith('0/0') || text === '') {
             if (contextList) {
-                console.log(`⏹️ No ${type} cue in list ${contextList} - clearing only that list`);
                 cues.forEach(cue => {
                     if (cue.last_seen === type && String(cue.cue_list || '1') === String(contextList)) {
                         cue.last_seen = null;
                     }
                 });
             } else {
-                console.log(`⏹️ No ${type} cue (unknown list) - clearing all lists`);
                 cues.forEach(cue => {
-                    if (cue.last_seen === type) {
-                        cue.last_seen = null;
-                    }
+                    if (cue.last_seen === type) cue.last_seen = null;
                 });
             }
             saveCues();
             return;
         }
         
-        // --- FIX START: Robusteres Parsing mit Fallback ---
+        // --- DER FIX STARTET HIER ---
         let list, cue, remainder;
 
-        // Versuch 1: Standard Format "Liste/Cue" (z.B. "2/5 Label")
         const listCueMatch = text.match(/^(\d+)\/(\d+(?:\.\d+)?)(?:\s+(.*))?$/);
         
         if (listCueMatch) {
@@ -1295,60 +1289,52 @@ function parseCueText(cueText, type, contextList) {
             cue = listCueMatch[2];
             remainder = listCueMatch[3] ? listCueMatch[3].trim() : '';
         } 
-        // Versuch 2: Fallback - Nur "Cue" (z.B. "5 Label"), aber wir kennen die Liste aus dem Kontext
+        // WICHTIG: Dieser Block fehlt bei dir!
         else if (contextList) {
             console.log(`⚠️ Regex Fallback: Nutze contextList ${contextList} für "${text}"`);
             const cueOnlyMatch = text.match(/^(\d+(?:\.\d+)?)(?:\s+(.*))?$/);
-            
             if (cueOnlyMatch) {
                 list = contextList;
                 cue = cueOnlyMatch[1];
                 remainder = cueOnlyMatch[2] ? cueOnlyMatch[2].trim() : '';
             } else {
-                console.warn(`⚠️ REGEX MISMATCH: Could not parse cue text '${text}' even with context list ${contextList}`);
-                return;
+                return; 
             }
         } else {
-            console.warn(`⚠️ REGEX MISMATCH: Could not parse cue text '${text}' - Expected format: "List/Cue Rest..."`);
+            console.warn(`⚠️ REGEX MISMATCH: Konnte "${text}" nicht lesen.`);
             return;
         }
         // --- FIX ENDE ---
         
-        // Step 2: Extract trailing fade time and optional completion percentage
+        // Ab hier weiter wie bisher (Fade Zeiten extrahieren)...
         let fadeTime = '';
         let completion = '';
         let label = '';
         
         const fadeTimePattern = '[\\d.:]+';
         
-        // Pattern 1: Just numbers "fade% completion%" (NO label)
         const noLabelActiveMatch = remainder.match(new RegExp(`^(${fadeTimePattern})\\s+(\\d+)%\\s*$`));
         if (noLabelActiveMatch) {
             fadeTime = noLabelActiveMatch[1];
             completion = noLabelActiveMatch[2] + '%';
             label = '';
         } else {
-            // Pattern 2: Label followed by fade and percentage
             const labelActiveMatch = remainder.match(new RegExp(`^(.+?)\\s+(${fadeTimePattern})\\s+(\\d+)%\\s*$`));
             if (labelActiveMatch) {
                 label = labelActiveMatch[1].trim();
                 fadeTime = labelActiveMatch[2];
                 completion = labelActiveMatch[3] + '%';
             } else {
-                // Check for pending cue format (no percentage)
-                // Pattern 3: Just a number "fade" (NO label)
                 const noLabelPendingMatch = remainder.match(new RegExp(`^(${fadeTimePattern})\\s*$`));
                 if (noLabelPendingMatch) {
                     fadeTime = noLabelPendingMatch[1];
                     label = '';
                 } else {
-                    // Pattern 4: Label followed by fade time
                     const labelPendingMatch = remainder.match(new RegExp(`^(.+?)\\s+(${fadeTimePattern})\\s*$`));
                     if (labelPendingMatch) {
                         label = labelPendingMatch[1].trim();
                         fadeTime = labelPendingMatch[2];
                     } else {
-                        // No fade time, entire remainder is the label
                         label = remainder;
                     }
                 }
@@ -1357,7 +1343,6 @@ function parseCueText(cueText, type, contextList) {
         
         console.log(`📝 Parsed ${type} cue: List ${list}, Cue ${cue}, Label: "${label}"`);
         
-        // Record timing only for main playback list
         if (type === 'active' && showTimings.isRecording && String(list) === mainPlaybackList) {
             const now = Date.now();
             if (!showTimings.showStartTime) showTimings.showStartTime = now;
@@ -1396,7 +1381,6 @@ function parseCueText(cueText, type, contextList) {
             }
         }
         
-        // Clear last_seen only from cues in the SAME list
         cues.forEach(c => {
             if (c.last_seen === type && String(c.cue_list || '1') === String(list)) {
                 c.last_seen = null;
